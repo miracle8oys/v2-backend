@@ -38,13 +38,18 @@ app.get("/api/v2/recomendations", async (req, res) => {
       },
     });
     const dataPriority = await Priority.findAll();
+
     const listItemTransactions =
       preprocessingDataTransactions(dataTransactions);
+
     const attributePriority = getPriorityValue(dataPriority);
 
-    const bundlingResult = (
-      await associationApriori(listItemTransactions, 0.3)
-    ).sort((a, b) => (a.support > b.support ? -1 : 1));
+    // const bundlingResult = (
+    //   await associationApriori(listItemTransactions, 0.3)
+    // ).sort((a, b) => (a.support > b.support ? -1 : 1));
+
+    const bundlingResult = await associationApriori(listItemTransactions, 0.3);
+
     const itemsRankResult = (
       await getItemsRank(
         dataProducts,
@@ -52,14 +57,19 @@ app.get("/api/v2/recomendations", async (req, res) => {
         attributePriority.expired,
         attributePriority.profit
       )
-    ).slice(0, 5); // get the best 5 product on the rank
+    ).slice(0, 15); // get the best 5 product on the rank
 
-    const result = (
-      await getRecomendationResult(bundlingResult, itemsRankResult)
-    ).sort((a, b) => (a.support > b.support ? -1 : 1));
+    // const result = (
+    //   await getRecomendationResult(bundlingResult, itemsRankResult)
+    // ).sort((a, b) => (a.support > b.support ? -1 : 1));
+
+    const result = await getRecomendationResult(
+      bundlingResult,
+      itemsRankResult
+    );
 
     res.status(201).json({
-      data: bundlingResult,
+      data: result,
       message: "Success",
     });
   } catch (err) {
@@ -434,54 +444,59 @@ app.delete("/api/v2/history/:id", async (req, res) => {
   }
 });
 
-app.post("/save", async (req, res) => {
-  //   const { user_id, result, itemset, best_products } = req.body;
-  //   const newResult = new Result({
-  //     _id: mongoose.Types.ObjectId(),
-  //     user_id: user_id,
-  //     result: result,
-  //     itemset: itemset,
-  //     best_products: best_products,
-  //     date: new Date(),
-  //   });
-  //   newResult
-  //     .save()
-  //     .then((response) => {
-  //       res.status(201).json({
-  //         status: "OK",
-  //         data: response,
-  //       });
-  //     })
-  //     .catch((err) => {
-  //       res.status(500).json({
-  //         status: "OK",
-  //         data: err,
-  //       });
-  //     });
+app.post("/api/v2/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const userData = await User.findOne({
+      where: {
+        username,
+      },
+    });
+
+    if (userData) {
+      if (userData.password === password) {
+        res.status(200).json({
+          data: [],
+          message: "Success",
+        });
+      } else {
+        res.status(401).json({
+          data: [],
+          message: "Password Incorrect",
+        });
+      }
+    } else {
+      res.status(401).json({
+        data: [],
+        message: "Username Not Found",
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      data: [],
+      message: err.message,
+    });
+  }
 });
 
-app.get("/history/:user_id/:company_id", async (req, res) => {
-  //   const { user_id, company_id } = req.params;
-  //   const result = await Result.find({
-  //     user_id,
-  //   });
-  //   const comp = await Company.findOne({
-  //     _id: company_id,
-  //   });
-  //   if (!result) {
-  //     res.status(403).json({
-  //       status: "OK",
-  //       message: "History not found",
-  //     });
-  //   } else {
-  //     res.status(200).json({
-  //       status: "OK",
-  //       data: {
-  //         result,
-  //         comp,
-  //       },
-  //     });
-  //   }
+app.post("/api/v2/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    await User.create({
+      username,
+      password,
+    });
+
+    res.status(401).json({
+      data: [],
+      message: "Success",
+    });
+  } catch (err) {
+    res.status(500).json({
+      data: [],
+      message: err.message,
+    });
+  }
 });
 
 app.listen(process.env.PORT || Port, () =>

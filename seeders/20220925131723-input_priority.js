@@ -16,13 +16,13 @@ module.exports = {
       [
         {
           attribute: "stock",
-          priority: 35,
+          priority: 50,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
         {
           attribute: "profit",
-          priority: 35,
+          priority: 20,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
